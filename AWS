@@ -1,1 +1,67 @@
+#coding: utf-8
+import requests
+import pandas as pd
+import boto3
+from botocore.client import Config
+import bs4
+from bs4 import BeautifulSoup as BS
+import re
 
+## First please modify the file path as the same root file path of this script;
+filepath1 = ' '
+ACCESS_KEY_ID = ''
+ACCESS_SECRET_KEY = ''
+BUCKET_NAME = ''
+url = """https://www.broadwayworld.com/grossesexcel.cfm"""
+url_scrape = 'https://www.broadwayworld.com/grosses.cfm'
+######################
+
+def data_prep(url)
+    """         """
+    data = requests.get(url, allow_redirects=True)
+    df_data=pd.read_html(data.content)
+    df_data= pd.DataFrame(df_data[0])
+    df_data.columns = df_data.iloc[0]
+    df_data=df_data.reindex(df_data.index.drop(0))
+    #df_data.head()
+    return(df_data)
+
+def filename_scrape(link):
+    '''to scrape the heading on website 'https://www.broadwayworld.com/grosses.cfm' as the raw file name of the report
+    '''
+    link_data = requests.get(link, allow_redirects=True)
+    get_text = link_data.text
+    soup = BS(get_text, "html.parser")
+    heading = soup.select('h1')[0].text.strip()
+    return (heading)
+
+filename=filename_scrape(url_scrape)
+
+def filename_clean(filename):
+    '''
+    raw filename has to be cleaned due to non-alphabet characters.
+    '''
+    filename_cleaned=re.sub("[^0-9a-zA-Z]","_",filename)
+    return(filename_cleaned)
+
+filename_cleaned = filename_clean(filename)
+print(filename_cleaned)
+
+## save file under the same root filefolder as this script
+df_data.to_csv(filename_cleaned + ".csv")
+
+## connect to AWS S3 and upload the file
+
+def upload_s3()
+filepath = filepath1 + filename_cleaned + ".csv"
+file_content = open(filepath, 'rb')
+
+s3 = boto3.resource(
+    's3',
+    aws_access_key_id=ACCESS_KEY_ID,
+    aws_secret_access_key=ACCESS_SECRET_KEY,
+    config=Config(signature_version='s3v4')
+)
+s3.Bucket(BUCKET_NAME).put_object(Key=filename_cleaned + ".csv", Body=file_content)
+
+print("The file has been uploaded to AWS")
